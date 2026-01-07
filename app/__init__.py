@@ -1,0 +1,2 @@
+"""Documentation API Lambda service."""
+

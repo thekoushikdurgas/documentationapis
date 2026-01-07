@@ -1,0 +1,817 @@
+{
+	"info": {
+		"_postman_id": "3333ef6a-c57d-4980-b59c-8735372dc212",
+		"name": "Documentation API Service",
+		"description": "Postman collection for Lambda Documentation API Service deployed on AWS API Gateway.\n\n**Base URL**: {{base_url}}\n**Production URL**: https://ostltf6zr0.execute-api.us-east-1.amazonaws.com\n\n**Authentication**:\n- Public endpoints (documentation pages): No authentication required\n- Protected endpoints: X-API-Key header required\n- API Key: {{api_key}}\n\n## API Structure\n- **Health Check**: Service health and info endpoints\n- **Documentation Pages**: 9 endpoints (5 public, 4 admin)\n- **Endpoint Documentation**: 7 endpoints (all require API key)\n- **Relationships**: 6 endpoints (all require API key)\n\n## Features\n- Documentation page CRUD operations\n- S3 storage with presigned URLs\n- Endpoint documentation tracking\n- Relationship tracking between pages and endpoints\n- MongoDB metadata storage\n- Query filtering and pagination",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "20572666",
+		"_collection_link": "https://prbal5-1003.postman.co/workspace/priama~c1c1d143-bd8f-4768-b551-66234b878d2b/collection/20572666-3333ef6a-c57d-4980-b59c-8735372dc212?action=share&source=collection_link&creator=20572666"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check service health and MongoDB connection status. Returns cached health status immediately (<5ms) and refreshes in background if stale."
+					},
+					"response": []
+				},
+				{
+					"name": "Root Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Get service information (name, version, status). No authentication required."
+					},
+					"response": []
+				}
+			],
+			"description": "Health check and service info endpoints (no authentication required)"
+		},
+		{
+			"name": "Documentation Pages",
+			"item": [
+				{
+					"name": "Public",
+					"item": [
+						{
+							"name": "List Pages",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/docs",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs"
+									]
+								},
+								"description": "List all documentation pages (public endpoint, no auth required). Returns metadata + presigned S3 URLs for content."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Page",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/docs/:page_id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs",
+										":page_id"
+									],
+									"variable": [
+										{
+											"key": "page_id",
+											"value": "about_page",
+											"description": "Unique page ID"
+										}
+									]
+								},
+								"description": "Get documentation page by ID (public endpoint, no auth required). Returns metadata + presigned S3 URL for markdown content."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Page Content",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/docs/:page_id/content",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs",
+										":page_id",
+										"content"
+									],
+									"variable": [
+										{
+											"key": "page_id",
+											"value": "about_page",
+											"description": "Unique page ID"
+										}
+									]
+								},
+								"description": "Get documentation page markdown content directly (public endpoint, no auth required). Proxy endpoint that fetches content from S3 to avoid CORS issues. Returns plain text markdown."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Page Endpoints",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/docs/:page_id/endpoints",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs",
+										":page_id",
+										"endpoints"
+									],
+									"variable": [
+										{
+											"key": "page_id",
+											"value": "about_page",
+											"description": "Unique page ID"
+										}
+									]
+								},
+								"description": "Get all endpoints used by a page (public endpoint, no auth required)."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Page Components",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/docs/:page_id/components",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs",
+										":page_id",
+										"components"
+									],
+									"variable": [
+										{
+											"key": "page_id",
+											"value": "about_page",
+											"description": "Unique page ID"
+										}
+									]
+								},
+								"description": "Get all components used by a page (public endpoint, no auth required)."
+							},
+							"response": []
+						}
+					],
+					"description": "Public endpoints that don't require authentication"
+				},
+				{
+					"name": "Admin",
+					"item": [
+						{
+							"name": "Create Page",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-API-Key",
+										"value": "{{api_key}}",
+										"description": "API key for authentication"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"page_id\": \"about_page\",\n  \"metadata\": {\n    \"route\": \"/about\",\n    \"file_path\": \"app/about/page.tsx\",\n    \"purpose\": \"About page for the application\",\n    \"authentication\": \"Not required\",\n    \"authorization\": null\n  },\n  \"content\": \"# About\\n\\nThis is the about page content in markdown format.\\n\\n## Features\\n\\n- Feature 1\\n- Feature 2\\n- Feature 3\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/docs",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs"
+									]
+								},
+								"description": "Create new documentation page (Admin only, API key required). Uploads markdown to S3 and saves metadata to MongoDB. Returns created page with presigned URL."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Page",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-API-Key",
+										"value": "{{api_key}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"metadata\": {\n    \"purpose\": \"Updated about page description\"\n  },\n  \"content\": \"# About\\n\\nUpdated content here.\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/docs/:page_id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs",
+										":page_id"
+									],
+									"variable": [
+										{
+											"key": "page_id",
+											"value": "about_page",
+											"description": "Unique page ID"
+										}
+									]
+								},
+								"description": "Update documentation page (Admin only, API key required). Updates S3 content and/or MongoDB metadata. All fields are optional."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Page",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-API-Key",
+										"value": "{{api_key}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/docs/:page_id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs",
+										":page_id"
+									],
+									"variable": [
+										{
+											"key": "page_id",
+											"value": "about_page",
+											"description": "Unique page ID"
+										}
+									]
+								},
+								"description": "Delete documentation page (Admin only, API key required). Removes from both S3 and MongoDB."
+							},
+							"response": []
+						},
+						{
+							"name": "Sync Pages",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-API-Key",
+										"value": "{{api_key}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"pages\": [\n    {\n      \"page_path\": \"/about\",\n      \"page_title\": \"About Page\",\n      \"file_path\": \"app/about/page.tsx\",\n      \"purpose\": \"About page\"\n    },\n    {\n      \"page_path\": \"/contact\",\n      \"page_title\": \"Contact Page\",\n      \"file_path\": \"app/contact/page.tsx\",\n      \"purpose\": \"Contact page\"\n    }\n  ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/docs/sync",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"docs",
+										"sync"
+									]
+								},
+								"description": "Sync documentation pages from analysis data (Admin only, API key required). Creates pages if they don't exist, updates if they do."
+							},
+							"response": []
+						}
+					],
+					"description": "Admin endpoints that require API key authentication"
+				}
+			],
+			"description": "Documentation pages endpoints - 9 total (5 public, 4 admin)"
+		},
+		{
+			"name": "Endpoint Documentation",
+			"item": [
+				{
+					"name": "List Endpoints",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/endpoint-docs?limit=100&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"endpoint-docs"
+							],
+							"query": [
+								{
+									"key": "api_version",
+									"value": "v4",
+									"description": "Filter by API version (optional)",
+									"disabled": true
+								},
+								{
+									"key": "method",
+									"value": "GET",
+									"description": "Filter by HTTP method (optional)",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "100",
+									"description": "Maximum number of results (1-1000, default: 100)"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Number of results to skip (default: 0)"
+								}
+							]
+						},
+						"description": "List all endpoint documentation with optional filters. Requires API key."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/endpoint-docs/:endpoint_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"endpoint-docs",
+								":endpoint_id"
+							],
+							"variable": [
+								{
+									"key": "endpoint_id",
+									"value": "get_contacts_v4",
+									"description": "Unique endpoint ID"
+								}
+							]
+						},
+						"description": "Get endpoint documentation by ID. Requires API key."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Endpoint Pages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/endpoint-docs/:endpoint_id/pages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"endpoint-docs",
+								":endpoint_id",
+								"pages"
+							],
+							"variable": [
+								{
+									"key": "endpoint_id",
+									"value": "get_contacts_v4",
+									"description": "Unique endpoint ID"
+								}
+							]
+						},
+						"description": "Get all pages using a specific endpoint. Requires API key."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Endpoint",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"endpoint_id\": \"get_contacts_v4\",\n  \"endpoint_path\": \"/api/v4/contacts\",\n  \"method\": \"GET\",\n  \"api_version\": \"v4\",\n  \"router_file\": \"app/api/v4/endpoints/contacts.py\",\n  \"service_methods\": [\"list_contacts\"],\n  \"repository_methods\": [\"get_all_contacts\"],\n  \"authentication\": \"Bearer token (JWT)\",\n  \"authorization\": \"User role required\",\n  \"rate_limit\": \"100 requests/minute\",\n  \"description\": \"List all contacts with filtering and pagination\",\n  \"sql_file\": null\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/endpoint-docs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"endpoint-docs"
+							]
+						},
+						"description": "Create endpoint documentation (Admin only, API key required)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Endpoint",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Updated endpoint description\",\n  \"authentication\": \"Bearer token (JWT) required\",\n  \"rate_limit\": \"200 requests/minute\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/endpoint-docs/:endpoint_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"endpoint-docs",
+								":endpoint_id"
+							],
+							"variable": [
+								{
+									"key": "endpoint_id",
+									"value": "get_contacts_v4",
+									"description": "Unique endpoint ID"
+								}
+							]
+						},
+						"description": "Update endpoint documentation (Admin only, API key required). All fields are optional."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Endpoint",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/endpoint-docs/:endpoint_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"endpoint-docs",
+								":endpoint_id"
+							],
+							"variable": [
+								{
+									"key": "endpoint_id",
+									"value": "get_contacts_v4",
+									"description": "Unique endpoint ID"
+								}
+							]
+						},
+						"description": "Delete endpoint documentation (Admin only, API key required)."
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Endpoints",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"endpoints\": [\n    {\n      \"endpoint_path\": \"/api/v4/contacts\",\n      \"method\": \"GET\",\n      \"api_version\": \"v4\",\n      \"router_file\": \"app/api/v4/endpoints/contacts.py\",\n      \"description\": \"List contacts\"\n    },\n    {\n      \"endpoint_path\": \"/api/v4/contacts/:id\",\n      \"method\": \"GET\",\n      \"api_version\": \"v4\",\n      \"router_file\": \"app/api/v4/endpoints/contacts.py\",\n      \"description\": \"Get contact by ID\"\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/endpoint-docs/sync",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"endpoint-docs",
+								"sync"
+							]
+						},
+						"description": "Sync endpoint documentation from analysis data (Admin only, API key required). Creates endpoints if they don't exist, updates if they do."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoint documentation endpoints - 7 total (all require API key)"
+		},
+		{
+			"name": "Relationships",
+			"item": [
+				{
+					"name": "Get Relationship Graph",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/docs/relationships/graph",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs",
+								"relationships",
+								"graph"
+							]
+						},
+						"description": "Get full relationship graph (nodes and edges). Returns all pages and endpoints with their connections. Requires API key."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pages for Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/docs/relationships/endpoint/:endpoint_path",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs",
+								"relationships",
+								"endpoint",
+								":endpoint_path"
+							],
+							"query": [
+								{
+									"key": "method",
+									"value": "GET",
+									"description": "HTTP method filter (optional)",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "endpoint_path",
+									"value": "/api/v4/contacts",
+									"description": "Endpoint path (can include slashes)"
+								}
+							]
+						},
+						"description": "Get all pages using a specific endpoint. Requires API key."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Endpoints for Page",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/docs/relationships/page/:page_path",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs",
+								"relationships",
+								"page",
+								":page_path"
+							],
+							"variable": [
+								{
+									"key": "page_path",
+									"value": "/about",
+									"description": "Page path (can include slashes)"
+								}
+							]
+						},
+						"description": "Get all endpoints used by a specific page. Requires API key."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/docs/relationships/statistics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs",
+								"relationships",
+								"statistics"
+							]
+						},
+						"description": "Get relationship statistics including total relationships, unique pages/endpoints, and breakdown by API version. Requires API key."
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Relationships",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"relationships\": {\n    \"page_endpoint_links\": [\n      {\n        \"page_path\": \"/about\",\n        \"endpoint_path\": \"/api/v4/contacts\",\n        \"method\": \"GET\",\n        \"api_version\": \"v4\"\n      },\n      {\n        \"page_path\": \"/contact\",\n        \"endpoint_path\": \"/api/v4/contacts\",\n        \"method\": \"POST\",\n        \"api_version\": \"v4\"\n      }\n    ]\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/docs/relationships/sync",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs",
+								"relationships",
+								"sync"
+							]
+						},
+						"description": "Sync all relationships from analysis data (Admin only, API key required). Creates relationships between pages and endpoints."
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Relationships",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Key",
+								"value": "{{api_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/docs/relationships/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs",
+								"relationships",
+								"validate"
+							]
+						},
+						"description": "Validate relationships for broken links (Admin only, API key required). Checks for orphaned relationships and missing pages/endpoints."
+					},
+					"response": []
+				}
+			],
+			"description": "Documentation relationships endpoints - 6 total (all require API key)"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ostltf6zr0.execute-api.us-east-1.amazonaws.com",
+			"type": "string",
+			"description": "Base URL for the API Gateway endpoint"
+		},
+		{
+			"key": "api_key",
+			"value": "bc7a0177de676a8e8bd98c2a0e6f96152b7b1ae1e72eb3d108ed13d5f01fd9bd",
+			"type": "string",
+			"description": "API key for authentication"
+		}
+	]
+}

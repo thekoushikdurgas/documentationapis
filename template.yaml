@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Documentation API Service for Contact360 - Centralized documentation microservice
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 3008
+    Runtime: python3.11
+    Environment:
+      Variables:
+        APP_ENV: production
+        DEBUG: "false"
+        LOG_LEVEL: INFO
+        MONGODB_DB_NAME: documentation
+        MONGODB_MAX_POOL_SIZE: 50
+        MONGODB_MIN_POOL_SIZE: 5
+        MONGODB_MAX_IDLE_TIME_MS: 60000
+        ENABLE_QUERY_CACHING: "true"
+        QUERY_CACHE_TTL: "300"
+        QUERY_CACHE_MAX_SIZE: "500"
+        ENABLE_QUERY_MONITORING: "true"
+        SLOW_QUERY_THRESHOLD: "1.0"
+        BATCH_SIZE_LIMIT: "500"
+        S3_DOCUMENTATION_PREFIX: "documentation/"
+        S3_PRESIGNED_URL_EXPIRATION: "3600"
+
+Parameters:
+  ApiKey:
+    Type: String
+    Description: API key for service authentication
+    Default: bc7a0177de676a8e8bd98c2a0e6f96152b7b1ae1e72eb3d108ed13d5f01fd9bd
+    NoEcho: true
+  
+  MongodbUri:
+    Type: String
+    Description: MongoDB connection URI
+    Default: mongodb://admin:koushik123456@54.164.46.115:27017
+    NoEcho: true
+  
+  S3BucketName:
+    Type: String
+    Description: S3 bucket name for documentation storage
+    Default: contact360-bucket
+    NoEcho: false
+  
+  AwsRegion:
+    Type: String
+    Description: AWS region
+    Default: us-east-1
+    NoEcho: false
+
+Resources:
+  DocumentationApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: documentation-api
+      CodeUri: .
+      Handler: app.main.handler
+      Description: Documentation API Service for Contact360
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          API_KEY: !Ref ApiKey
+          MONGODB_URI: !Ref MongodbUri
+          S3_BUCKET_NAME: !Ref S3BucketName
+          # AWS_REGION is automatically provided by Lambda - don't set it manually
+      Events:
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: ANY
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+      Tags:
+        Service: documentation-api
+        Environment: production
+        ManagedBy: SAM
+
+Outputs:
+  DocumentationApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !GetAtt ServerlessHttpApi.ApiEndpoint
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
+  
+  DocumentationApiId:
+    Description: "API Gateway HTTP API ID"
+    Value: !Ref ServerlessHttpApi
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiId"
+  
+  DocumentationApiFunctionArn:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt DocumentationApiFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-FunctionArn"
+  
+  DocumentationApiFunctionName:
+    Description: "Lambda Function Name"
+    Value: !Ref DocumentationApiFunction
+    Export:
+      Name: !Sub "${AWS::StackName}-FunctionName"
